@@ -3,72 +3,162 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Fate Picker</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <title>Реши за меня</title>
+    <link rel="stylesheet" href="{% static 'app/css/styles.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(to right, #e0f7fa, #ffffff);
         }
         .logo {
-            max-height: 100px;
-            margin: 20px auto;
-            display: block;
+            width: 150px;
+            margin-bottom: 20px;
         }
-        .result-box {
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            100% { transform: rotateY(720deg); }
+        }
+        #coin-img.flip {
+            animation: flip 2s ease-in-out forwards;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(1800deg); }
+        }
+        #wheel-img.spin {
+            animation: spin 3s cubic-bezier(0.33, 1, 0.68, 1);
         }
     </style>
 </head>
-<body>
-<div class="container py-4">
-    <img src="{% static 'Made with insMind-097fd202-4c34-4d31-9b45-a5642416446e.png' %}" alt="Fate Picker Logo" class="logo">
+<body class="container py-5">
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <form method="POST" class="card p-4 shadow-sm">
-                {% csrf_token %}
-                <h4 class="mb-3">Выберите способ выбора</h4>
+    <!-- Панель пользователя -->
+    <div class="text-end mb-3">
+        {% if user.is_authenticated %}
+            <span>Привет, {{ user.username }}!</span>
+            <a href="{% url 'logout' %}">Выйти</a>
 
-                <select class="form-select mb-3" name="method" required>
-                    <option value="">-- Выбрать --</option>
-                    <option value="coin">Монетка</option>
-                    <option value="yesno">Да или нет</option>
-                    <option value="wheel">Колесо фортуны</option>
-                    <option value="drum">Барабан</option>
-                    <option value="custom">Свои варианты</option>
-                </select>
-
-                <label class="form-label">Введите свои варианты (через запятую):</label>
-                <input type="text" name="options" class="form-control mb-3" placeholder="Пицца, суши, борщ">
-
-                <label class="form-label">Или выберите готовую категорию:</label>
-                <select class="form-select mb-3" name="category">
-                    <option value="">-- Нет категории --</option>
-                    {% for cat in categories %}
-                        <option value="{{ cat.id }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-
-                <button type="submit" class="btn btn-primary w-100">Реши за меня</button>
-            </form>
-        </div>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm me-2">Вход</a>
+            <a href="{% url 'register' %}" class="btn btn-outline-success btn-sm">Регистрация</a>
+        {% endif %}
     </div>
+
+    <div class="text-center">
+        <img src="{% static 'Made with insMind-097fd202-4c34-4d31-9b45-a5642416446e.png' %}" alt="Логотип" class="logo">
+        <h1 class="mb-4">Реши за меня 🎲</h1>
+        <p class="lead">Введи вопрос и варианты — мы выберем за тебя!</p>
+    </div>
+
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="question" class="form-label">Твой вопрос:</label>
+            <input type="text" class="form-control" id="question" name="question" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="options" class="form-label">Варианты ответа (через запятую):</label>
+            <input type="text" class="form-control" id="options" name="options" placeholder="Например: Пицца, Суши, Бургер">
+        </div>
+
+        <div class="mb-3">
+            <label for="method" class="form-label">Метод выбора:</label>
+            <select class="form-select" id="method" name="method">
+                <option value="random">Честная случайность</option>
+                <option value="coin">Подброс монетки</option>
+                <option value="wheel">Колесо фортуны</option>
+                <option value="predefined">Выбери из готового</option>
+            </select>
+        </div>
+
+        <div id="predefined-options" class="mb-3 d-none">
+            <label for="predefined" class="form-label">Готовые категории:</label>
+            <select class="form-select" id="predefined" name="predefined">
+                <option value="еда">Что поесть?</option>
+                <option value="фильм">Какой фильм посмотреть?</option>
+                <option value="дело">Что поделать сейчас?</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">Выбери за меня!</button>
+    </form>
 
     {% if result %}
-    <div class="row mt-4 justify-content-center">
-        <div class="col-md-6">
-            <div class="result-box">
-                <h4>Выбор Fate Picker:</h4>
-                <h2 class="text-success">{{ result }}</h2>
-            </div>
+        <div class="alert alert-primary mt-4 text-center fs-4">
+            ✅ Результат: <strong>{{ result }}</strong>
         </div>
-    </div>
     {% endif %}
 
-</div>
+    <!-- Монетка -->
+    <div id="coin-animation" class="text-center mt-4 d-none">
+        <img id="coin-img" src="{% static 'app/img/coin.png' %}" alt="Монетка" width="150">
+        <div class="mt-2 fw-bold fs-4" id="coin-result"></div>
+    </div>
+
+    <!-- Колесо -->
+    <div id="wheel-container" class="text-center mt-4 d-none">
+        <img id="wheel-img" src="{% static 'app/img/wheel.png' %}" alt="Колесо фортуны" width="250">
+        <div class="mt-2 fw-bold fs-4" id="wheel-result"></div>
+    </div>
+
+    <script>
+        const methodSelect = document.getElementById("method");
+        const predefinedBlock = document.getElementById("predefined-options");
+
+        methodSelect.addEventListener("change", function () {
+            if (this.value === "predefined") {
+                predefinedBlock.classList.remove("d-none");
+            } else {
+                predefinedBlock.classList.add("d-none");
+            }
+        });
+
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const method = methodSelect.value;
+
+            // Монетка
+            if (method === "coin") {
+                e.preventDefault();
+                const coin = document.getElementById("coin-img");
+                const container = document.getElementById("coin-animation");
+                const resultDiv = document.getElementById("coin-result");
+
+                container.classList.remove("d-none");
+                resultDiv.textContent = "";
+                coin.classList.remove("flip");
+                void coin.offsetWidth;
+                coin.classList.add("flip");
+
+                setTimeout(() => {
+                    const result = Math.random() < 0.5 ? "Орел" : "Решка";
+                    resultDiv.textContent = result;
+                }, 2000);
+            }
+
+            // Колесо
+            else if (method === "wheel") {
+                e.preventDefault();
+                const wheel = document.getElementById("wheel-img");
+                const container = document.getElementById("wheel-container");
+                const resultDiv = document.getElementById("wheel-result");
+
+                container.classList.remove("d-none");
+                resultDiv.textContent = "";
+                wheel.classList.remove("spin");
+                void wheel.offsetWidth;
+                wheel.classList.add("spin");
+
+                const options = ["Вариант 1", "Вариант 2", "Вариант 3", "Вариант 4"];
+                const result = options[Math.floor(Math.random() * options.length)];
+
+                setTimeout(() => {
+                    resultDiv.textContent = result;
+                }, 3000);
+            }
+        });
+    </script>
 </body>
 </html>
