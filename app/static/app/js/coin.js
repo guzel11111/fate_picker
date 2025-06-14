@@ -5,7 +5,17 @@ function flipCoin() {
     coin.classList.add("flip");
 
     setTimeout(() => {
-        document.getElementById("coin-result").innerText =
-            Math.random() > 0.5 ? "Орёл" : "Решка";
+        const res = Math.random() > 0.5 ? "Орёл" : "Решка";
+        document.getElementById("coin-result").innerText = res;
+        // Отправка результата в историю
+        fetch('/api/save_history/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({method: 'coin', result: res})
+        });
     }, 2000);
 }

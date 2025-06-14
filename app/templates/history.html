@@ -1,0 +1,185 @@
+{% extends "base_auth.html" %}
+{% block title %}История{% endblock %}
+{% block header_title %}История{% endblock %}
+{% block content %}
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+input[type="date"].form-control {
+    border: 2px solid #f237ff;
+    border-radius: 18px;
+    background: #fff;
+    color: #f237ff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px #f237ff22;
+    transition: border 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+    padding: 0.7rem 1.2rem;
+}
+input[type="date"].form-control:focus {
+    border: 2px solid #ddaef3;
+    box-shadow: 0 0 0 4px #ddaef344;
+    background: linear-gradient(90deg, #f9d0ff 0%, #ddaef3 100%);
+    color: #7c4dff;
+}
+input[type="date"].form-control::placeholder {
+    color: #ddaef3;
+    opacity: 1;
+}
+.flatpickr-calendar {
+    border-radius: 18px;
+    border: 2px solid #f237ff;
+    box-shadow: 0 4px 24px #ddaef344;
+    font-family: 'Segoe UI', sans-serif;
+}
+.flatpickr-months .flatpickr-month {
+    background: linear-gradient(90deg, #f9d0ff 0%, #ddaef3 100%);
+    color: #f237ff;
+    border-radius: 16px 16px 0 0;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day:hover {
+    background: linear-gradient(90deg, #f237ff 0%, #ddaef3 100%) !important;
+    color: #fff;
+    border-radius: 10px;
+}
+.flatpickr-day.today {
+    border-color: #f237ff;
+}
+input[type="text"].form-control.flatpickr-input {
+    border: 2px solid #f237ff;
+    border-radius: 18px;
+    background: #fff;
+    color: #f237ff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px #f237ff22;
+    transition: border 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+    padding: 0.7rem 1.2rem;
+}
+input[type="text"].form-control.flatpickr-input:focus {
+    border: 2px solid #ddaef3;
+    box-shadow: 0 0 0 4px #ddaef344;
+    background: linear-gradient(90deg, #f9d0ff 0%, #ddaef3 100%);
+    color: #7c4dff;
+}
+.load-more-btn {
+    background: linear-gradient(90deg, #f237ff 0%, #ddaef3 100%);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    margin: 1rem auto;
+    display: block;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgb(255, 106, 255);
+}
+.load-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgb(255, 106, 255);
+}
+.load-more-btn:active {
+    transform: translateY(0);
+}
+.load-more-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+</style>
+
+<div class="container mt-4">
+    <div style="text-align: left;">
+        <form method="get" class="mb-4" style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 15px; margin: 0;">
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <input type="text" id="date_from" name="date_from" class="form-control" value="{{ request.GET.date_from }}" placeholder="От">
+                <input type="text" id="date_to" name="date_to" class="form-control" value="{{ request.GET.date_to }}" placeholder="До">
+            </div>
+            <button type="submit" class="btn btn-auth" style="background: linear-gradient(90deg, #f237ff 0%, #ddaef3 100%); color: #fff; height: 48px; line-height: 1.2; font-weight:600; margin: 0 auto;">Фильтр</button>
+        </form>
+    </div>
+    
+    <ul class="list-group" id="history-list">
+        {% for session in sessions %}
+            <li class="list-group-item mb-2" style="border-radius: 16px; box-shadow: 0 2px 8px #f237ff22;">
+                <b>
+                {% if session.method == 'dice' %}Кубик{% else %}{{ session.get_method_display }}{% endif %}
+                </b>
+                {% if session.category %} <span style="color:#ddaef3;">({{ session.category.name }})</span>{% endif %}
+                — <i>{{ session.result }}</i>
+                <br>
+                <small class="text-muted">{{ session.created_at|date:"d.m.Y H:i" }}</small>
+                {% if session.method == 'custom' %}
+                    <br><span style="color:#f237ff;">Варианты:</span>
+                    {% for opt in session.custom_options.all %}
+                        {{ opt.text }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </li>
+        {% empty %}
+            <li class="list-group-item">Вы ещё ничего не выбирали.</li>
+        {% endfor %}
+    </ul>
+
+    {% if has_more %}
+    <button id="load-more" class="load-more-btn" data-page="{{ next_page }}">
+        Показать еще
+    </button>
+    {% endif %}
+</div>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+flatpickr("#date_from", {
+    dateFormat: "Y-m-d",
+    locale: "ru",
+    allowInput: true
+});
+flatpickr("#date_to", {
+    dateFormat: "Y-m-d",
+    locale: "ru",
+    allowInput: true
+});
+
+// Функция для загрузки дополнительных записей
+document.getElementById('load-more')?.addEventListener('click', async function() {
+    const button = this;
+    const page = button.dataset.page;
+    button.disabled = true;
+    
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', page);
+        
+        const response = await fetch(url);
+        const html = await response.text();
+        
+        // Создаем временный элемент для парсинга HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        
+        // Находим новые записи
+        const newItems = temp.querySelectorAll('#history-list li');
+        const historyList = document.getElementById('history-list');
+        
+        // Добавляем новые записи
+        newItems.forEach(item => {
+            if (!item.textContent.includes('Вы ещё ничего не выбирали')) {
+                historyList.appendChild(item.cloneNode(true));
+            }
+        });
+        
+        // Обновляем кнопку "Показать еще"
+        const newButton = temp.querySelector('#load-more');
+        if (newButton) {
+            button.dataset.page = newButton.dataset.page;
+            button.disabled = false;
+        } else {
+            button.remove();
+        }
+    } catch (error) {
+        console.error('Ошибка при загрузке дополнительных записей:', error);
+        button.disabled = false;
+    }
+});
+</script>
+{% endblock %} 

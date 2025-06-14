@@ -1,0 +1,364 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Колесо фортуны | Fate Picker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            background: linear-gradient(to right, #f9d0ff, #ddaef3);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0;
+            color: #2d3748;
+            margin: 0;
+        }
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+        .logo {
+            width: 250px;
+            transition: transform 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        .header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            color: #f237ff;
+            font-weight: bold;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .scene {
+            perspective: 1000px;
+            margin: 1rem 0 0 0;
+            width: 340px;
+            height: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #wheel {
+            width: 340px;
+            height: 340px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 10px #ffd700, 0 0 40px #f237ff44;
+            border: 8px solid #ffd700;
+            position: relative;
+            z-index: 1;
+        }
+        .pointer {
+            position: absolute;
+            right: 20px; /* стрелка с правого края */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            z-index: 2;
+        }
+
+        .pointer::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-right: 30px solid #f237ff; /* стрелка направлена влево */
+            filter: drop-shadow(0 0 5px rgba(242, 55, 255, 0.5));
+        }
+
+
+        .btn-spin {
+            background-color: #ec7ef8;
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            box-shadow: 0 4px 10px rgb(255, 106, 255);
+        }
+        .btn-spin:hover {
+            background-color: hsl(297, 98%, 55%);
+            transform: translateY(-2px);
+        }
+        .btn-spin:active {
+            transform: translateY(0);
+        }
+        .btn-spin:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .result {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 2rem;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            min-height: 48px;
+            color: #f237ff;
+        }
+        .result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .stats {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1rem;
+            color: #f237ff;
+            font-weight: 600;
+        }
+        .category-select, 
+        .custom-input {
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(242, 55, 255, 0.2);
+            width: 320px;
+            max-width: 90vw;
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .option-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .option-input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: 2px solid #f237ff;
+            border-radius: 15px;
+            font-size: 1rem;
+            color: #2d3748;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        .option-input:focus {
+            outline: none;
+            border-color: #7c4dff;
+            box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.2);
+        }
+        .option-item button {
+            background: none;
+            border: none;
+            color: #f237ff;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        .option-item button:hover {
+            color: #7c4dff;
+        }
+        .add-option-btn {
+            background: #f237ff;
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(242, 55, 255, 0.4);
+        }
+        .add-option-btn:hover {
+            background: #7c4dff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(124, 77, 255, 0.5);
+        }
+        .add-option-btn:active {
+            transform: scale(0.95);
+        }
+        .switch-btns {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .switch-btns button {
+            border: none;
+            background: #f9d0ff;
+            color: #7c4dff;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .switch-btns button.active, .switch-btns button:hover {
+            background: #f237ff;
+            color: #fff;
+        }
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+            .logo {
+                width: 200px;
+            }
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            .scene {
+                width: 220px;
+                height: 220px;
+            }
+            #wheel {
+                width: 220px;
+                height: 220px;
+            }
+            .category-select, .custom-input {
+                width: 200px;
+            }
+        }
+        @media (max-height: 700px) {
+            .scene {
+                width: 200px;
+                height: 200px;
+            }
+            .logo {
+                width: 180px;
+            }
+            .btn-spin {
+                padding: 0.5rem 1.5rem;
+                font-size: 1rem;
+            }
+            .result {
+                font-size: 1.5rem;
+                min-height: 36px;
+            }
+            .stats {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'index' %}" class="logo-link">
+            <img src="{% static 'Made with insMind-097fd202-4c34-4d31-9b45-a5642416446e.png' %}" alt="Логотип" class="logo">
+        </a>
+        <h1>Колесо фортуны <i class="fas fa-circle-notch"></i></h1>
+    </div>
+    <div class="controls">
+        <div class="switch-btns">
+            <button id="btnCategory" class="active" type="button">Категории</button>
+            <button id="btnCustom" type="button">Свои варианты</button>
+        </div>
+        <div id="categorySelect" class="category-select" style="display: block;">
+            <select class="form-select">
+                <option value="">Выберите категорию</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="customInput" class="custom-input">
+            <div class="input-group">
+                <input type="text" id="optionInput" class="form-control" placeholder="Введите вариант...">
+                <button id="addOptionBtn" class="add-option-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="optionList" class="option-list"></div>
+        </div>
+    </div>
+    <div class="scene">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="340" height="340"></canvas>
+    </div>
+    <button id="spinBtn" class="btn btn-spin">
+        <i class="fas fa-sync-alt me-2"></i>Крутить колесо
+    </button>
+    <div id="result" class="result"></div>
+    <div class="stats">
+        <span id="spinCount">Крутили: 0</span>
+    </div>
+
+    <div style="display:none">
+        {% for category in categories %}
+            <div>Категория: {{ category.name }} (id={{ category.id }})<br>
+                {% for opt in category.options.all %}
+                    - {{ opt.text }} (id={{ opt.id }}, category_id={{ opt.category_id }})<br>
+                {% empty %}
+                    Нет опций<br>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <script type="application/json" id="categories-json">
+        {
+            {% for category in categories %}
+                "{{ category.id }}": [
+                    {% for opt in category.options.all %}
+                        "{{ opt.text|escapejs }}"{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        }
+    </script>
+    <script>
+        // Debug information
+        const categoriesJson = document.getElementById('categories-json').textContent;
+        console.log('Raw categories JSON:', categoriesJson);
+        try {
+            const categoriesData = JSON.parse(categoriesJson);
+            console.log('Parsed categories data:', categoriesData);
+            // Проверяем каждую категорию
+            Object.entries(categoriesData).forEach(([categoryId, options]) => {
+                console.log(`Category ${categoryId} has ${options.length} options:`, options);
+            });
+        } catch (e) {
+            console.error('Error parsing categories JSON:', e);
+        }
+    </script>
+
+    <script src="{% static 'app/js/fortune_wheel.js' %}"></script>
+</body>
+</html>
