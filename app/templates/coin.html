@@ -343,6 +343,51 @@
             }, 2500);
         }
         flipBtn.addEventListener('click', flipCoin);
+        window.updateWheel = updateWheel;
+        window.currentOptions = currentOptions;
+        function updateWheel() {
+            if (mode === 'category') {
+                const selectedCategory = categorySelect.value;
+                if (selectedCategory && categoriesData[selectedCategory]) {
+                    currentOptions = categoriesData[selectedCategory];
+                } else {
+                    currentOptions = [];
+                }
+            } else {
+                // Всегда брать актуальный список из DOM!
+                currentOptions = [];
+                const items = optionList.querySelectorAll('.option-item span');
+                items.forEach(span => currentOptions.push(span.textContent));
+            }
+            drawWheel(currentOptions);
+        }
+        function addOption() {
+            const option = optionInput.value.trim();
+            if (option) {
+                const optionItem = document.createElement('div');
+                optionItem.className = 'option-item';
+                optionItem.innerHTML = `
+                    <span>${option}</span>
+                    <button class="remove-option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                const removeButton = optionItem.querySelector('.remove-option');
+                removeButton.addEventListener('click', function() {
+                    optionItem.remove();
+                    console.log('Option removed, updating wheel...');
+                    updateWheel();
+                });
+                optionList.appendChild(optionItem);
+                optionInput.value = '';
+                updateWheel();
+            }
+        }
+        removeButton.addEventListener('click', function() {
+            optionItem.remove();
+            console.log('Option removed, updating wheel...');
+            updateWheel();
+        });
     </script>
 </body>
 </html>

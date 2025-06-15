@@ -31,13 +31,19 @@
             <input type="email" name="email" class="form-control" id="email" placeholder="Email" required>
             <label for="email">Email</label>
         </div>
-        <div class="form-floating mb-3">
-            <input type="password" name="password1" class="form-control" id="password1" placeholder="Пароль" required>
-            <label for="password1">Пароль</label>
+        <div class="form-floating mb-3 password-container">
+            <input type="password" name="password" class="form-control" id="password" placeholder="Пароль" required>
+            <label for="password">Пароль</label>
+            <span class="password-toggle" onclick="togglePassword('password')">
+                <i class="fas fa-eye-slash"></i>
+            </span>
         </div>
-        <div class="form-floating mb-4">
-            <input type="password" name="password2" class="form-control" id="password2" placeholder="Подтверждение пароля" required>
-            <label for="password2">Подтверждение пароля</label>
+        <div class="form-floating mb-4 password-container">
+            <input type="password" name="confirm_password" class="form-control" id="confirm_password" placeholder="Подтверждение пароля" required>
+            <label for="confirm_password">Подтверждение пароля</label>
+            <span class="password-toggle" onclick="togglePassword('confirm_password')">
+                <i class="fas fa-eye-slash"></i>
+            </span>
         </div>
         <button type="submit" class="btn btn-auth w-100">Зарегистрироваться</button>
     </form>
@@ -48,6 +54,29 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    .password-container {
+        position: relative;
+    }
+    .password-toggle {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #f237ff;
+        z-index: 10;
+        padding: 5px;
+        transition: color 0.3s ease;
+    }
+    .password-toggle:hover {
+        color: #ddaef3;
+    }
+    .form-floating > .form-control {
+        padding-right: 40px;
+    }
+</style>
+
 <script>
     // Добавляем анимацию при наведении на поля ввода
     document.querySelectorAll('.form-floating').forEach(field => {
@@ -60,20 +89,36 @@
         });
     });
 
-    // Проверка совпадения паролей
-    const password1 = document.getElementById('password1');
-    const password2 = document.getElementById('password2');
-    const form = document.querySelector('form');
-
-    function validatePasswords() {
-        if (password2.value && password1.value !== password2.value) {
-            password2.setCustomValidity('Пароли не совпадают');
+    // Функция переключения видимости пароля
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = input.nextElementSibling.nextElementSibling.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
         } else {
-            password2.setCustomValidity('');
+            input.type = 'password';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
         }
     }
 
-    password1.addEventListener('change', validatePasswords);
-    password2.addEventListener('keyup', validatePasswords);
+    // Проверка совпадения паролей
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const form = document.querySelector('form');
+
+    function validatePasswords() {
+        if (confirmPassword.value && password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Пароли не совпадают');
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    }
+
+    password.addEventListener('change', validatePasswords);
+    confirmPassword.addEventListener('keyup', validatePasswords);
 </script>
 {% endblock %}

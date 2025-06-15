@@ -235,4 +235,3 @@ document.addEventListener('DOMContentLoaded', function () {
     // Первичная отрисовка
     updateWheel();
 });
-
