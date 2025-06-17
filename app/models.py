@@ -110,6 +110,35 @@ class UserCustomOption(models.Model):
         verbose_name = "Пользовательский вариант"
         verbose_name_plural = "Пользовательские варианты"
 
+class UserCategory(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Пользователь")
+    name = models.CharField(max_length=100, verbose_name="Название категории")
+    slug = models.SlugField(max_length=120, blank=True, verbose_name="Слаг")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Пользовательская категория"
+        verbose_name_plural = "Пользовательские категории"
+
+
+class UserCategoryOption(models.Model):
+    category = models.ForeignKey(UserCategory, related_name='options', on_delete=models.CASCADE, verbose_name="Категория")
+    text = models.CharField(max_length=200, verbose_name="Текст варианта")
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        verbose_name = "Вариант пользовательской категории"
+        verbose_name_plural = "Варианты пользовательских категорий"
 
 
 # Create your models here.

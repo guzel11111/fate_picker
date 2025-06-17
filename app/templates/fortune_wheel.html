@@ -296,7 +296,22 @@
                 {% for category in categories %}
                     <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
                 {% endfor %}
+                {% if user_categories %}
+                    <optgroup label="Мои категории">
+                        {% for category in user_categories %}
+                        <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
             </select>
+            {% if user_categories %}
+                <div id="userCategoryActions">
+                    {% for category in user_categories %}
+                        <button class="edit-category-btn btn btn-sm btn-outline-secondary" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-options="{% for opt in category.options.all %}{{ opt.text }}{% if not forloop.last %}|{% endif %}{% endfor %}">Редактировать</button>
+                        <button class="delete-category-btn btn btn-sm btn-outline-danger" data-category-id="{{ category.id }}">Удалить</button>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div id="customInput" class="custom-input">
             <div class="input-group">
@@ -306,6 +321,18 @@
                 </button>
             </div>
             <div id="optionList" class="option-list"></div>
+            <button id="saveCustomOptionsBtn" class="btn btn-primary mt-2" type="button">Сохранить свои варианты</button>
+        </div>
+        <div id="userCategoryInput" class="custom-input" style="display:none;">
+            <input type="text" id="categoryNameInput" class="form-control mb-2" placeholder="Введите название категории...">
+            <div class="input-group">
+                <input type="text" id="userOptionInput" class="form-control" placeholder="Введите вариант...">
+                <button id="addUserOptionBtn" class="add-option-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="userOptionList" class="option-list"></div>
+            <button id="saveUserCategoryBtn" class="btn btn-primary mt-2" type="button">Сохранить категорию</button>
         </div>
     </div>
     <div class="scene">
@@ -341,6 +368,15 @@
                     {% endfor %}
                 ]{% if not forloop.last %},{% endif %}
             {% endfor %}
+            {% if user_categories %}
+                {% for category in user_categories %}
+                    ,"{{ category.id }}": [
+                        {% for opt in category.options.all %}
+                            "{{ opt.text|escapejs }}"{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ]
+                {% endfor %}
+            {% endif %}
         }
     </script>
     <script>

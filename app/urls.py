@@ -11,6 +11,10 @@ urlpatterns = [
     path('wheel/', views.wheel_view, name='wheel'),  # <-- здесь
     path('history/', views.history_view, name='history'),
     path('api/save_history/', views.save_history_api, name='save_history_api'),
+    path('api/save_custom_options/', views.save_custom_options_api, name='save_custom_options_api'),
+    path('api/save_user_category/', views.save_user_category_api, name='save_user_category_api'),
+    path('api/delete_user_category/', views.delete_user_category_api, name='delete_user_category_api'),
+    path('api/edit_user_category/', views.edit_user_category_api, name='edit_user_category_api'),
 ]
 
 

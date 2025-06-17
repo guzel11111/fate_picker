@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from .forms import RegisterForm, LoginForm
 import random
 from django.shortcuts import render
-from .models import DecisionCategory, Option, UserChoiceSession
+from .models import DecisionCategory, Option, UserChoiceSession, UserCategory, UserCategoryOption
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -50,7 +50,21 @@ def wheel_view(request):
             print(f"  - {opt.text} (id={opt.id}, category_id={opt.category_id})")
     print("===========================\n")
 
-    return render(request, 'fortune_wheel.html', {'categories': categories})
+    # Получаем пользовательские категории текущего пользователя
+    user_categories = []
+    if request.user.is_authenticated:
+        user_categories = UserCategory.objects.filter(user=request.user, is_active=True).prefetch_related('options')
+        print("\n=== User Categories Debug Info ===")
+        for category in user_categories:
+            options = list(category.options.all())
+            print(f"\nUser Category: {category.name} (ID: {category.id})")
+            print(f"Options count: {len(options)}")
+            print("Options:")
+            for opt in options:
+                print(f"  - {opt.text} (id={opt.id}, category_id={opt.category_id})")
+        print("===========================\n")
+
+    return render(request, 'fortune_wheel.html', {'categories': categories, 'user_categories': user_categories})
 
 User = get_user_model()
 
@@ -155,4 +169,120 @@ def save_history_api(request):
     print("===========================\n")
     return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
 
+@csrf_exempt
+def save_custom_options_api(request):
+    print("\n=== Save Custom Options API Debug Info ===")
+    print(f"Method: {request.method}")
+    print(f"User authenticated: {request.user.is_authenticated}")
+    if request.method == 'POST' and request.user.is_authenticated:
+        import json
+        data = json.loads(request.body.decode('utf-8'))
+        print(f"Received data: {data}")
+        options = data.get('options', [])
+        result = data.get('result', '')
+        if not options or not isinstance(options, list):
+            return JsonResponse({'status': 'error', 'message': 'Нет вариантов для сохранения'})
+        session = UserChoiceSession.objects.create(
+            user=request.user,
+            method='custom',
+            result=result or (options[0] if options else ''),
+            category=None
+        )
+        for opt in options:
+            UserCustomOption.objects.create(session=session, text=opt)
+        print(f"Created custom session: {session} with options: {options}")
+        print("===========================\n")
+        return JsonResponse({'status': 'ok'})
+    print("===========================\n")
+    return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
+
+@csrf_exempt
+def save_user_category_api(request):
+    print("\n=== Save User Category API Debug Info ===")
+    print(f"Method: {request.method}")
+    print(f"User authenticated: {request.user.is_authenticated}")
+    print(f"User: {request.user}")
+    if request.method == 'POST' and request.user.is_authenticated:
+        import json
+        data = json.loads(request.body.decode('utf-8'))
+        print(f"Received data: {data}")
+        name = data.get('name', '').strip()
+        options = data.get('options', [])
+        if not name or not options or not isinstance(options, list):
+            return JsonResponse({'status': 'error', 'message': 'Название категории и варианты обязательны'})
+        try:
+            category = UserCategory.objects.create(user=request.user, name=name)
+            print(f"Created category: {category}")
+            for opt in options:
+                option = UserCategoryOption.objects.create(category=category, text=opt)
+                print(f"Created option: {option}")
+            print(f"Created user category: {category} with options: {options}")
+            print("===========================\n")
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            print(f"Error creating category: {e}")
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    print("===========================\n")
+    return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
+
+@csrf_exempt
+def delete_user_category_api(request):
+    print("\n=== Delete User Category API Debug Info ===")
+    print(f"Method: {request.method}")
+    print(f"User authenticated: {request.user.is_authenticated}")
+    if request.method == 'POST' and request.user.is_authenticated:
+        import json
+        data = json.loads(request.body.decode('utf-8'))
+        print(f"Received data: {data}")
+        category_id = data.get('category_id')
+        if not category_id:
+            return JsonResponse({'status': 'error', 'message': 'ID категории не указан'})
+        try:
+            category = UserCategory.objects.get(id=category_id, user=request.user)
+            category.delete()
+            print(f"Deleted user category: {category}")
+            print("===========================\n")
+            return JsonResponse({'status': 'ok'})
+        except UserCategory.DoesNotExist:
+            print("Category not found or not owned by user")
+            print("===========================\n")
+            return JsonResponse({'status': 'error', 'message': 'Категория не найдена'})
+    print("===========================\n")
+    return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
+
+@csrf_exempt
+def edit_user_category_api(request):
+    print("\n=== Edit User Category API Debug Info ===")
+    print(f"Method: {request.method}")
+    print(f"User authenticated: {request.user.is_authenticated}")
+    if request.method == 'POST' and request.user.is_authenticated:
+        import json
+        data = json.loads(request.body.decode('utf-8'))
+        print(f"Received data: {data}")
+        category_id = data.get('category_id')
+        new_name = data.get('name', '').strip()
+        new_options = data.get('options', [])
+        if not category_id or not new_name or not isinstance(new_options, list):
+            return JsonResponse({'status': 'error', 'message': 'ID, название и варианты обязательны'})
+        try:
+            category = UserCategory.objects.get(id=category_id, user=request.user)
+            category.name = new_name
+            category.slug = ''  # сбросить slug, чтобы пересоздать
+            category.save()
+            # Удаляем старые варианты
+            category.options.all().delete()
+            # Добавляем новые варианты
+            for opt in new_options:
+                UserCategoryOption.objects.create(category=category, text=opt)
+            print(f"Edited user category: {category} with options: {new_options}")
+            print("===========================\n")
+            return JsonResponse({'status': 'ok'})
+        except UserCategory.DoesNotExist:
+            print("Category not found or not owned by user")
+            print("===========================\n")
+            return JsonResponse({'status': 'error', 'message': 'Категория не найдена'})
+    print("===========================\n")
+    return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
+
 # Create your views here.
+

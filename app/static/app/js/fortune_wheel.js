@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const optionInput = document.getElementById('optionInput');
     const addOptionBtn = document.getElementById('addOptionBtn');
     const optionList = document.getElementById('optionList');
+    const saveCustomOptionsBtn = document.getElementById('saveCustomOptionsBtn');
+    const editCategoryModal = document.getElementById('editCategoryModal');
+    const editCategoryNameInput = document.getElementById('editCategoryNameInput');
+    const editUserOptionInput = document.getElementById('editUserOptionInput');
+    const addEditUserOptionBtn = document.getElementById('addEditUserOptionBtn');
+    const editUserOptionList = document.getElementById('editUserOptionList');
+    const saveEditCategoryBtn = document.getElementById('saveEditCategoryBtn');
+    const closeEditCategoryModal = document.getElementById('closeEditCategoryModal');
+    let editingCategoryId = null;
 
     let currentOptions = [];
     let isSpinning = false;
@@ -165,9 +174,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 currentOptions = [];
                 console.log('No options found for selected category');
             }
-        } else {
+        } else if (mode === 'custom') {
             currentOptions = Array.from(optionList.children).map(item => item.querySelector('span').textContent);
             console.log('Custom options:', currentOptions);
+        } else if (mode === 'userCategory') {
+            currentOptions = Array.from(userOptionList.children).map(item => item.querySelector('span').textContent);
+            console.log('User category options:', currentOptions);
         }
         drawWheel(currentOptions);
     }
@@ -202,6 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnCustom.classList.remove('active');
         customInput.style.display = 'none';
         categorySelect.style.display = 'block';
+        userCategoryInput.style.display = 'none';
         updateWheel();
     });
 
@@ -211,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnCategory.classList.remove('active');
         customInput.style.display = 'block';
         categorySelect.style.display = 'none';
+        userCategoryInput.style.display = 'none';
         updateWheel();
     });
 
@@ -231,6 +245,228 @@ document.addEventListener('DOMContentLoaded', function () {
             spinCount.textContent = `Крутили: ${spinCountValue}`;
         });
     });
+    saveCustomOptionsBtn.addEventListener('click', function () {
+        if (mode !== 'custom') return;
+        const options = Array.from(optionList.children).map(item => item.querySelector('span').textContent);
+        if (!options.length) {
+            alert('Добавьте хотя бы один вариант!');
+            return;
+        }
+        fetch('/api/save_custom_options/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({options: options, result: ''})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                alert('Варианты успешно сохранены!');
+            } else {
+                alert('Ошибка при сохранении: ' + (data.message || '')); 
+            }
+        })
+        .catch(() => alert('Ошибка при сохранении!'));
+    });
+
+    // Добавляем обработчик для кнопки создания пользовательской категории
+    const btnUserCategory = document.createElement('button');
+    btnUserCategory.id = 'btnUserCategory';
+    btnUserCategory.textContent = 'Создать категорию';
+    btnUserCategory.className = 'btn btn-outline-primary';
+    document.querySelector('.switch-btns').appendChild(btnUserCategory);
+
+    btnUserCategory.addEventListener('click', function () {
+        mode = 'userCategory';
+        btnUserCategory.classList.add('active');
+        btnCategory.classList.remove('active');
+        btnCustom.classList.remove('active');
+        customInput.style.display = 'none';
+        categorySelect.style.display = 'none';
+        userCategoryInput.style.display = 'block';
+        updateWheel();
+    });
+
+    function addUserOption() {
+        const option = userOptionInput.value.trim();
+        if (option) {
+            const optionItem = document.createElement('div');
+            optionItem.className = 'option-item';
+            optionItem.innerHTML = `
+                <span>${option}</span>
+                <button class="remove-option" onclick="this.parentElement.remove(); updateWheel();">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            userOptionList.appendChild(optionItem);
+            userOptionInput.value = '';
+            updateWheel();
+        }
+    }
+
+    addUserOptionBtn.addEventListener('click', addUserOption);
+    userOptionInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            addUserOption();
+        }
+    });
+
+    saveUserCategoryBtn.addEventListener('click', function () {
+        const name = categoryNameInput.value.trim();
+        const options = Array.from(userOptionList.children).map(item => item.querySelector('span').textContent);
+        console.log('Saving category:', { name, options });
+        
+        if (!name) {
+            alert('Введите название категории!');
+            return;
+        }
+        if (!options.length) {
+            alert('Добавьте хотя бы один вариант!');
+            return;
+        }
+        fetch('/api/save_user_category/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({name: name, options: options})
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Save category response:', data)
+            if (data.status === 'ok') {
+                alert('Категория успешно сохранена!');
+                categoryNameInput.value = '';
+                userOptionList.innerHTML = '';
+                // Перезагружаем страницу, чтобы обновить список категорий
+                window.location.reload();
+            } else {
+                alert('Ошибка при сохранении: ' + (data.message || '')); 
+            }
+        })
+        .catch(error => {
+            console.error('Error saving category:', error);
+            alert('Ошибка при сохранении!');
+        });
+    });
+
+    document.querySelectorAll('.delete-category').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            const categoryId = this.getAttribute('data-category-id');
+            if (confirm('Вы уверены, что хотите удалить эту категорию?')) {
+                fetch('/api/delete_user_category/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({category_id: categoryId})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        alert('Категория успешно удалена!');
+                        this.closest('option').remove();
+                    } else {
+                        alert('Ошибка при удалении: ' + (data.message || '')); 
+                    }
+                })
+                .catch(() => alert('Ошибка при удалении!'));
+            }
+        });
+    });
+
+    const userCategoryActions = document.getElementById('userCategoryActions');
+    if (userCategoryActions) {
+        userCategoryActions.addEventListener('click', function(e) {
+            const editBtn = e.target.closest('.edit-category-btn');
+            const deleteBtn = e.target.closest('.delete-category-btn');
+            if (editBtn) {
+                editingCategoryId = editBtn.getAttribute('data-category-id');
+                editCategoryNameInput.value = editBtn.getAttribute('data-category-name');
+                // Заполняем варианты
+                editUserOptionList.innerHTML = '';
+                const options = editBtn.getAttribute('data-category-options').split('|').filter(Boolean);
+                options.forEach(opt => {
+                    const optionItem = document.createElement('div');
+                    optionItem.className = 'option-item';
+                    optionItem.innerHTML = `
+                        <span>${opt}</span>
+                        <button class="remove-option" onclick="this.parentElement.remove();\"><i class="fas fa-times"></i></button>
+                    `;
+                    editUserOptionList.appendChild(optionItem);
+                });
+                editCategoryModal.style.display = 'flex';
+            }
+            if (deleteBtn) {
+                e.preventDefault();
+                const categoryId = deleteBtn.getAttribute('data-category-id');
+                if (confirm('Вы уверены, что хотите удалить эту категорию?')) {
+                    fetch('/api/delete_user_category/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({category_id: categoryId})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            alert('Категория успешно удалена!');
+                            window.location.reload();
+                        } else {
+                            alert('Ошибка при удалении: ' + (data.message || ''));
+                        }
+                    })
+                    .catch(() => alert('Ошибка при удалении!'));
+                }
+            }
+        });
+    }
+    document.body.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'saveEditCategoryBtn') {
+            const name = editCategoryNameInput.value.trim();
+            const options = Array.from(editUserOptionList.children).map(item => item.querySelector('span').textContent);
+            if (!name) {
+                alert('Введите название категории!');
+                return;
+            }
+            if (!options.length) {
+                alert('Добавьте хотя бы один вариант!');
+                return;
+            }
+            fetch('/api/edit_user_category/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({category_id: editingCategoryId, name: name, options: options})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    alert('Категория успешно обновлена!');
+                    window.location.reload();
+                } else {
+                    alert('Ошибка при сохранении: ' + (data.message || ''));
+                }
+            })
+            .catch(() => alert('Ошибка при сохранении!'));
+        }
+    });
+
+
 
     // Первичная отрисовка
     updateWheel();
