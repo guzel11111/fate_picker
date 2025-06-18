@@ -7,358 +7,304 @@
     <title>Колесо фортуны | Fate Picker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'app/css/styles.css' %}">
     <style>
-        html, body {
-            height: 100%;
-        }
         body {
-            background: linear-gradient(to right, #f9d0ff, #ddaef3);
+            background: linear-gradient(120deg, #f9d0ff 0%, #ddaef3 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 0;
-            color: #2d3748;
             margin: 0;
+            padding: 0;
         }
         .header {
             width: 100%;
             max-width: 1200px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            gap: 1rem;
+            justify-content: space-between;
+            margin: 0 auto 2rem auto;
+            padding: 1.5rem 2rem 0 2rem;
         }
         .logo {
-            width: 250px;
-            transition: transform 0.3s ease;
+            width: 60px;
+            margin-right: 10px;
         }
-        .logo:hover {
-            transform: scale(1.05);
+        .brand {
+            display: flex;
+            align-items: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #7c4dff;
+            letter-spacing: 1px;
         }
-        .header h1 {
-            font-size: 1.4rem;
-            margin: 0;
-            color: #f237ff;
-            font-weight: bold;
+        .fortune-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #e040fb;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .controls {
+        .main-content {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 3rem;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .wheel-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            background: none;
+            box-shadow: none;
+            padding: 0;
         }
         .scene {
-            perspective: 1000px;
-            margin: 1rem 0 0 0;
-            width: 340px;
-            height: 340px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             position: relative;
+            width: 400px;
+            height: 400px;
+            margin-bottom: 2rem;
         }
         #wheel {
-            width: 340px;
-            height: 340px;
-            background: white;
+            width: 400px;
+            height: 400px;
+            background: #fff;
             border-radius: 50%;
-            box-shadow: 0 0 0 10px #ffd700, 0 0 40px #f237ff44;
-            border: 8px solid #ffd700;
-            position: relative;
-            z-index: 1;
+            border: 12px solid #ffd700;
+            box-shadow: 0 0 0 8px #fff, 0 0 40px #f237ff44;
         }
         .pointer {
             position: absolute;
-            right: 20px; /* стрелка с правого края */
+            right: 25px;
             top: 50%;
             transform: translateY(-50%);
             width: 0;
             height: 0;
-            z-index: 2;
         }
-
         .pointer::before {
             content: '';
             position: absolute;
             top: 50%;
+            left: 0;
             transform: translateY(-50%);
-            width: 0;
-            height: 0;
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            border-right: 30px solid #f237ff; /* стрелка направлена влево */
-            filter: drop-shadow(0 0 5px rgba(242, 55, 255, 0.5));
+            border-top: 22px solid transparent;
+            border-bottom: 22px solid transparent;
+            border-right: 36px solid #e040fb;
+            filter: drop-shadow(0 0 8px #e040fb88);
         }
-
-
         .btn-spin {
-            background-color: #ec7ef8;
-            border: none;
-            color: white;
-            padding: 0.75rem 2rem;
-            font-size: 1.1rem;
-            border-radius: 50px;
+            background: #b388ff;
+            color: #fff;
             font-weight: 600;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-            box-shadow: 0 4px 10px rgb(255, 106, 255);
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 30px;
+            padding: 1rem 2.5rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 20px #e040fb55;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
         }
         .btn-spin:hover {
-            background-color: hsl(297, 98%, 55%);
+            background: #e040fb;
             transform: translateY(-2px);
-        }
-        .btn-spin:active {
-            transform: translateY(0);
-        }
-        .btn-spin:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        .result {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-top: 2rem;
-            text-align: center;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            min-height: 48px;
-            color: #f237ff;
-        }
-        .result.show {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 8px 24px #e040fb88;
         }
         .stats {
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 1rem;
-            color: #f237ff;
+            margin-top: 1.5rem;
+            color: #b388ff;
             font-weight: 600;
+            font-size: 1.1rem;
         }
-        .category-select, 
-        .custom-input {
-            display: none;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(242, 55, 255, 0.2);
-            width: 320px;
-            max-width: 90vw;
-            position: absolute;
-            right: 150px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        .input-group {
-            margin-bottom: 15px;
+        .controls-section {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px #e040fb22;
+            padding: 2.5rem 2rem;
+            min-width: 420px;
+            max-width: 480px;
             display: flex;
-            gap: 10px;
-            align-items: center;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .switch-btns {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .switch-btns button {
+            flex: 1;
+            background: #b388ff;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 16px;
+            padding: 0.9rem 0;
+            box-shadow: 0 2px 8px #e040fb33;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .switch-btns button.active, .switch-btns button:hover {
+            background: #e040fb;
+            color: #fff;
+            box-shadow: 0 4px 16px #e040fb55;
+        }
+        .panel-title {
+            color: #7c4dff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+        }
+        .form-select, .form-control {
+            border-radius: 12px;
+            border: 2px solid #b388ff;
+            font-size: 1rem;
+            padding: 0.7rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background: #b388ff;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.5rem 1.2rem;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: #e040fb;
+        }
+        .btn-success {
+            background: #43e97b;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.5rem 1.2rem;
+            transition: background 0.2s;
+        }
+        .btn-success:hover {
+            background: #38b06e;
         }
         .option-list {
             margin-top: 10px;
             max-height: 200px;
             overflow-y: auto;
         }
-        .option-input {
-            flex: 1;
-            padding: 0.8rem 1.2rem;
-            border: 2px solid #f237ff;
-            border-radius: 15px;
-            font-size: 1rem;
-            color: #2d3748;
-            background: white;
-            transition: all 0.3s ease;
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+                gap: 2rem;
+            }
+            .controls-section {
+                min-width: 320px;
+                max-width: 100vw;
+            }
         }
-        .option-input:focus {
-            outline: none;
-            border-color: #7c4dff;
-            box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.2);
-        }
-        .option-item button {
-            background: none;
-            border: none;
-            color: #f237ff;
-            cursor: pointer;
-            padding: 0 5px;
-        }
-        .option-item button:hover {
-            color: #7c4dff;
-        }
-        .add-option-btn {
-            background: #f237ff;
-            border: none;
-            color: white;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(242, 55, 255, 0.4);
-        }
-        .add-option-btn:hover {
-            background: #7c4dff;
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(124, 77, 255, 0.5);
-        }
-        .add-option-btn:active {
-            transform: scale(0.95);
-        }
-        .switch-btns {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        .switch-btns button {
-            border: none;
-            background: #f9d0ff;
-            color: #7c4dff;
-            font-weight: 600;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            transition: background 0.2s, color 0.2s;
-        }
-        .switch-btns button.active, .switch-btns button:hover {
-            background: #f237ff;
-            color: #fff;
-        }
-        @media (max-width: 768px) {
+        @media (max-width: 700px) {
             .header {
                 flex-direction: column;
-                text-align: center;
                 gap: 0.5rem;
-                margin-bottom: 1rem;
+                padding: 1rem 0 0 0;
             }
-            .logo {
-                width: 200px;
+            .main-content {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 0 0.5rem;
             }
-            .header h1 {
-                font-size: 1.3rem;
+            .scene, #wheel {
+                width: 260px !important;
+                height: 260px !important;
             }
-            .scene {
-                width: 220px;
-                height: 220px;
-            }
-            #wheel {
-                width: 220px;
-                height: 220px;
-            }
-            .category-select, .custom-input {
-                width: 200px;
-            }
-        }
-        @media (max-height: 700px) {
-            .scene {
-                width: 200px;
-                height: 200px;
-            }
-            .logo {
-                width: 180px;
-            }
-            .btn-spin {
-                padding: 0.5rem 1.5rem;
-                font-size: 1rem;
-            }
-            .result {
-                font-size: 1.5rem;
-                min-height: 36px;
-            }
-            .stats {
-                font-size: 0.9rem;
+            .controls-section {
+                padding: 1.2rem 0.5rem;
+                min-width: 0;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'index' %}" class="logo-link">
-            <img src="{% static 'Made with insMind-097fd202-4c34-4d31-9b45-a5642416446e.png' %}" alt="Логотип" class="logo">
-        </a>
-        <h1>Колесо фортуны <i class="fas fa-circle-notch"></i></h1>
-    </div>
-    <div class="controls">
-        <div class="switch-btns">
-            <button id="btnCategory" class="active" type="button">Категории</button>
-            <button id="btnCustom" type="button">Свои варианты</button>
+        <div class="brand">
+            <img src="{% static 'Made with insMind-097fd202-4c34-4d31-9b45-a5642416446e.png' %}" alt="Fate Picker" class="logo">
+            Fate Picker
         </div>
-        <div id="categorySelect" class="category-select" style="display: block;">
-            <select class="form-select">
-                <option value="">Выберите категорию</option>
-                {% for category in categories %}
-                    <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
-                {% endfor %}
-                {% if user_categories %}
-                    <optgroup label="Мои категории">
-                        {% for category in user_categories %}
-                        <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
+        <div class="fortune-title">Колесо фортуны <i class="fas fa-circle-notch"></i></div>
+    </div>
+    <div class="main-content">
+        <div class="wheel-section">
+            <div class="scene">
+                <div class="pointer"></div>
+                <canvas id="wheel" width="400" height="400"></canvas>
+            </div>
+            <button id="spinBtn" class="btn btn-spin"><i class="fas fa-sync-alt me-2"></i>КРУТИТЬ КОЛЕСО</button>
+            <div class="stats"><span id="spinCount">Крутили: 0</span></div>
+        </div>
+        <div class="controls-section">
+            <div class="switch-btns">
+                <button id="btnCategory" class="active" type="button">Категории</button>
+                <button id="btnCustom" type="button">Свои варианты</button>
+                <button id="btnCreateCategory" type="button">Создать категорию</button>
+            </div>
+            <div id="categorySelect" class="category-select panel">
+                <h3 class="panel-title">Готовые категории</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select class="form-select">
+                        <option value="">Выберите категорию</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
                         {% endfor %}
-                    </optgroup>
-                {% endif %}
-            </select>
-            {% if user_categories %}
-                <div id="userCategoryActions">
-                    {% for category in user_categories %}
-                        <button class="edit-category-btn btn btn-sm btn-outline-secondary" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-options="{% for opt in category.options.all %}{{ opt.text }}{% if not forloop.last %}|{% endif %}{% endfor %}">Редактировать</button>
-                        <button class="delete-category-btn btn btn-sm btn-outline-danger" data-category-id="{{ category.id }}">Удалить</button>
-                    {% endfor %}
+                    </select>
                 </div>
-            {% endif %}
-        </div>
-        <div id="customInput" class="custom-input">
-            <div class="input-group">
-                <input type="text" id="optionInput" class="form-control" placeholder="Введите вариант...">
-                <button id="addOptionBtn" class="add-option-btn">
-                    <i class="fas fa-plus"></i>
-                </button>
+                {% if user_categories %}
+                    <h3 class="panel-title" style="margin-top: 1.5rem;">Мои категории</h3>
+                    <select class="form-select" id="userCategorySelect">
+                        <option value="">Выберите категорию</option>
+                        {% for category in user_categories %}
+                            <option value="{{ category.id }}">{{ category.name }} ({{ category.options.count }} вариантов)</option>
+                        {% endfor %}
+                    </select>
+                    <div id="userCategoryActions" style="margin-top: 10px;">
+                        {% for category in user_categories %}
+                            <button class="edit-category-btn btn btn-sm btn-outline-secondary" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-options="{% for opt in category.options.all %}{{ opt.text }}{% if not forloop.last %}|{% endif %}{% endfor %}" style="display: none;">Редактировать</button>
+                            <button class="delete-category-btn btn btn-sm btn-outline-danger" data-category-id="{{ category.id }}" style="display: none;">Удалить</button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
-            <div id="optionList" class="option-list"></div>
-            <button id="saveCustomOptionsBtn" class="btn btn-primary mt-2" type="button">Сохранить свои варианты</button>
-        </div>
-        <div id="userCategoryInput" class="custom-input" style="display:none;">
-            <input type="text" id="categoryNameInput" class="form-control mb-2" placeholder="Введите название категории...">
-            <div class="input-group">
-                <input type="text" id="userOptionInput" class="form-control" placeholder="Введите вариант...">
-                <button id="addUserOptionBtn" class="add-option-btn">
-                    <i class="fas fa-plus"></i>
-                </button>
+            <div id="customInput" class="custom-input panel">
+                <h3 class="panel-title">Свои варианты</h3>
+                <div class="input-group" style="position: relative; display: flex; align-items: center; margin-bottom: 15px;">
+                    <input type="text" id="optionInput" class="form-control" placeholder="Введите вариант..." 
+                        style="flex-grow:1; padding-right:60px; z-index:1; background:#fff; border-radius:12px; border:2px solid #b388ff; font-size:1rem; height:45px;" />
+                    <button id="addOptionBtn" class="add-option-btn" type="button"
+                        style="position:absolute; right:1px; top:1%; transform:translateY(0); z-index:3; background:#f237ff; border:none; color:white; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; transition:all 0.3s ease; cursor:pointer; box-shadow:0 2px 8px rgba(242,55,255,0.4);">
+                        <i class="fas fa-plus" style="margin:0;padding:0;line-height:1;font-size:1.3rem;display:flex;align-items:center;justify-content:center;width:100%;height:100%;"></i>
+                    </button>
+                </div>
+                <div id="optionList" class="option-list"></div>
             </div>
-            <div id="userOptionList" class="option-list"></div>
-            <button id="saveUserCategoryBtn" class="btn btn-primary mt-2" type="button">Сохранить категорию</button>
+            <div id="userCategoryInput" class="user-category-input panel active-panel">
+                <h3 class="panel-title">Создать новую категорию</h3>
+                <input type="text" id="categoryNameInput" class="form-control mb-2" placeholder="Название новой категории"
+                    style="border-radius:12px; border:2px solid #b388ff; font-size:1rem; height:45px;" />
+                <div class="input-group" style="position: relative; display: flex; align-items: center; margin-bottom: 15px;">
+                    <input type="text" id="userOptionInput" class="form-control" placeholder="Введите вариант..." 
+                        style="flex-grow:1; padding-right:60px; z-index:1; background:#fff; border-radius:12px; border:2px solid #b388ff; font-size:1rem; height:45px;" />
+                    <button id="addUserOptionBtn" class="add-option-btn" type="button"
+                        style="position:absolute; right:1px; top:1%; transform:translateY(0); z-index:3; background:#f237ff; border:none; color:white; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; transition:all 0.3s ease; cursor:pointer; box-shadow:0 2px 8px rgba(242,55,255,0.4);">
+                        <i class="fas fa-plus" style="margin:0;padding:0;line-height:1;font-size:1.3rem;display:flex;align-items:center;justify-content:center;width:100%;height:100%;"></i>
+                    </button>
+                </div>
+                <div id="userOptionList" class="option-list"></div>
+                <button id="saveUserCategoryBtn" class="btn btn-success mt-2" type="button">Сохранить</button>
+            </div>
         </div>
     </div>
-    <div class="scene">
-        <div class="pointer"></div>
-        <canvas id="wheel" width="340" height="340"></canvas>
-    </div>
-    <button id="spinBtn" class="btn btn-spin">
-        <i class="fas fa-sync-alt me-2"></i>Крутить колесо
-    </button>
-    <div id="result" class="result"></div>
-    <div class="stats">
-        <span id="spinCount">Крутили: 0</span>
-    </div>
-
-    <div style="display:none">
-        {% for category in categories %}
-            <div>Категория: {{ category.name }} (id={{ category.id }})<br>
-                {% for opt in category.options.all %}
-                    - {{ opt.text }} (id={{ opt.id }}, category_id={{ opt.category_id }})<br>
-                {% empty %}
-                    Нет опций<br>
-                {% endfor %}
-            </div>
-        {% endfor %}
-    </div>
-
     <script type="application/json" id="categories-json">
         {
             {% for category in categories %}
@@ -366,35 +312,17 @@
                     {% for opt in category.options.all %}
                         "{{ opt.text|escapejs }}"{% if not forloop.last %},{% endif %}
                     {% endfor %}
+                ]{% if not forloop.last or user_categories %},{% endif %}
+            {% endfor %}
+            {% for category in user_categories %}
+                "{{ category.id }}": [
+                    {% for opt in category.options.all %}
+                        "{{ opt.text|escapejs }}"{% if not forloop.last %},{% endif %}
+                    {% endfor %}
                 ]{% if not forloop.last %},{% endif %}
             {% endfor %}
-            {% if user_categories %}
-                {% for category in user_categories %}
-                    ,"{{ category.id }}": [
-                        {% for opt in category.options.all %}
-                            "{{ opt.text|escapejs }}"{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    ]
-                {% endfor %}
-            {% endif %}
         }
     </script>
-    <script>
-        // Debug information
-        const categoriesJson = document.getElementById('categories-json').textContent;
-        console.log('Raw categories JSON:', categoriesJson);
-        try {
-            const categoriesData = JSON.parse(categoriesJson);
-            console.log('Parsed categories data:', categoriesData);
-            // Проверяем каждую категорию
-            Object.entries(categoriesData).forEach(([categoryId, options]) => {
-                console.log(`Category ${categoryId} has ${options.length} options:`, options);
-            });
-        } catch (e) {
-            console.error('Error parsing categories JSON:', e);
-        }
-    </script>
-
     <script src="{% static 'app/js/fortune_wheel.js' %}"></script>
 </body>
 </html>

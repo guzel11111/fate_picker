@@ -285,4 +285,3 @@ def edit_user_category_api(request):
     return JsonResponse({'status': 'error', 'message': 'not authenticated or not POST'})
 
 # Create your views here.
-

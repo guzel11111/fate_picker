@@ -4,14 +4,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const spinBtn = document.getElementById('spinBtn');
     const result = document.getElementById('result');
     const spinCount = document.getElementById('spinCount');
-    const categorySelect = document.querySelector('#categorySelect select');
+    const categorySelectPanel = document.getElementById('categorySelect');
+    const categorySelect = categorySelectPanel.querySelector('select');
+    const userCategorySelect = document.getElementById('userCategorySelect');
     const btnCategory = document.getElementById('btnCategory');
     const btnCustom = document.getElementById('btnCustom');
-    const customInput = document.getElementById('customInput');
+    const btnCreateCategory = document.getElementById('btnCreateCategory');
+    const customInputPanel = document.getElementById('customInput');
     const optionInput = document.getElementById('optionInput');
     const addOptionBtn = document.getElementById('addOptionBtn');
     const optionList = document.getElementById('optionList');
     const saveCustomOptionsBtn = document.getElementById('saveCustomOptionsBtn');
+    const userCategoryInputPanel = document.getElementById('userCategoryInput');
+    const categoryNameInput = document.getElementById('categoryNameInput');
+    const userOptionInput = document.getElementById('userOptionInput');
+    const addUserOptionBtn = document.getElementById('addUserOptionBtn');
+    const userOptionList = document.getElementById('userOptionList');
+    const saveUserCategoryBtn = document.getElementById('saveUserCategoryBtn');
+    const loadCategoryBtn = document.getElementById('loadCategoryBtn');
+    const userCategoryActions = document.getElementById('userCategoryActions');
+
     const editCategoryModal = document.getElementById('editCategoryModal');
     const editCategoryNameInput = document.getElementById('editCategoryNameInput');
     const editUserOptionInput = document.getElementById('editUserOptionInput');
@@ -19,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const editUserOptionList = document.getElementById('editUserOptionList');
     const saveEditCategoryBtn = document.getElementById('saveEditCategoryBtn');
     const closeEditCategoryModal = document.getElementById('closeEditCategoryModal');
+
     let editingCategoryId = null;
 
     let currentOptions = [];
@@ -26,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let mode = 'category';
     let spinCountValue = 0;
 
-    // Получение данных из JSON
     const categoriesJson = document.getElementById('categories-json').textContent;
     console.log('Raw categories JSON:', categoriesJson);
     
@@ -39,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
         categoriesData = {};
     }
 
-    // Функция для обрезки текста с троеточием справа
     function fitTextOnCanvas(ctx, text, maxWidth) {
         if (ctx.measureText(text).width <= maxWidth) {
             return text;
@@ -55,10 +66,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!options || options.length === 0) {
             console.log('No options to draw');
             ctx.clearRect(0, 0, wheel.width, wheel.height);
-            // Рисуем белый фон
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(wheel.width/2, wheel.height/2, wheel.width/2 - 10, 0, Math.PI * 2);
+            ctx.arc(wheel.width / 2, wheel.height / 2, wheel.width / 2 - 10, 0, Math.PI * 2);
             ctx.fill();
             return;
         }
@@ -76,16 +86,13 @@ document.addEventListener('DOMContentLoaded', function () {
             optionsCount: options.length
         });
 
-        // Очищаем канвас
         ctx.clearRect(0, 0, wheel.width, wheel.height);
 
-        // Рисуем белый фон
         ctx.fillStyle = 'white';
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Рисуем сегменты
         options.forEach((option, index) => {
             const startAngle = index * segmentAngle;
             const endAngle = startAngle + segmentAngle;
@@ -95,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function () {
             ctx.arc(centerX, centerY, radius, startAngle, endAngle);
             ctx.closePath();
 
-            // Используем более яркие цвета для сегментов
             ctx.fillStyle = `hsl(${index * 360 / options.length}, 70%, 80%)`;
             ctx.fill();
 
@@ -103,15 +109,14 @@ document.addEventListener('DOMContentLoaded', function () {
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Рисуем текст
             ctx.save();
             ctx.translate(centerX, centerY);
             ctx.rotate(startAngle + segmentAngle / 2);
             ctx.textAlign = 'right';
             ctx.fillStyle = '#7c4dff';
             ctx.font = 'bold 16px sans-serif';
-            const textRadius = radius - 10; // ближе к краю круга
-            const maxTextWidth = textRadius - 30; // чуть дальше от центра
+            const textRadius = radius - 10;
+            const maxTextWidth = textRadius - 30;
             const displayText = fitTextOnCanvas(ctx, option, maxTextWidth);
             ctx.fillText(displayText, textRadius, 5);
             ctx.restore();
@@ -141,7 +146,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof onComplete === 'function') {
                 onComplete(options[selectedIndex]);
             }
-            // Отправка результата в историю
             let categoryId = null;
             if (mode === 'category') {
                 categoryId = categorySelect.value || null;
@@ -163,23 +167,45 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateWheel() {
         console.log('Updating wheel, mode:', mode);
         if (mode === 'category') {
-            const selectedCategory = categorySelect.value;
-            console.log('Selected category:', selectedCategory);
-            console.log('Available categories:', categoriesData);
+            let selectedCategoryId = '';
+            if (categorySelect.value) {
+                selectedCategoryId = String(categorySelect.value);
+            } else if (userCategorySelect && userCategorySelect.value) {
+                selectedCategoryId = String(userCategorySelect.value);
+            }
             
-            if (selectedCategory && categoriesData[selectedCategory]) {
-                currentOptions = categoriesData[selectedCategory];
+            console.log('Selected category ID (after mutual exclusion): ', selectedCategoryId);
+            console.log('Available categories:', categoriesData);
+
+            if (selectedCategoryId && categoriesData[selectedCategoryId]) {
+                currentOptions = categoriesData[selectedCategoryId];
                 console.log('Selected category options:', currentOptions);
             } else {
                 currentOptions = [];
                 console.log('No options found for selected category');
             }
+
+            // Update the visibility of edit/delete buttons for user categories
+            if (userCategoryActions) {
+                const currentSelectedUserCategoryId = userCategorySelect ? userCategorySelect.value : '';
+                Array.from(userCategoryActions.children).forEach(button => {
+                    const buttonCategoryId = button.getAttribute('data-category-id');
+                    if (buttonCategoryId === currentSelectedUserCategoryId) {
+                        button.style.display = 'inline-block';
+                    } else {
+                        button.style.display = 'none';
+                    }
+                });
+            }
+
         } else if (mode === 'custom') {
             currentOptions = Array.from(optionList.children).map(item => item.querySelector('span').textContent);
             console.log('Custom options:', currentOptions);
-        } else if (mode === 'userCategory') {
+        } else if (mode === 'createCategory') {
             currentOptions = Array.from(userOptionList.children).map(item => item.querySelector('span').textContent);
-            console.log('User category options:', currentOptions);
+            console.log('User category options (create):', currentOptions);
+        } else {
+            currentOptions = [];
         }
         drawWheel(currentOptions);
     }
@@ -208,13 +234,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    function showPanel(panelToShow) {
+        const panels = [categorySelectPanel, customInputPanel, userCategoryInputPanel];
+        panels.forEach(panel => {
+            if (panel === panelToShow) {
+                panel.classList.add('active-panel');
+            } else {
+                panel.classList.remove('active-panel');
+            }
+        });
+    }
+
     btnCategory.addEventListener('click', function () {
         mode = 'category';
         btnCategory.classList.add('active');
         btnCustom.classList.remove('active');
-        customInput.style.display = 'none';
-        categorySelect.style.display = 'block';
-        userCategoryInput.style.display = 'none';
+        btnCreateCategory.classList.remove('active');
+        showPanel(categorySelectPanel);
         updateWheel();
     });
 
@@ -222,18 +258,55 @@ document.addEventListener('DOMContentLoaded', function () {
         mode = 'custom';
         btnCustom.classList.add('active');
         btnCategory.classList.remove('active');
-        customInput.style.display = 'block';
-        categorySelect.style.display = 'none';
-        userCategoryInput.style.display = 'none';
+        btnCreateCategory.classList.remove('active');
+        showPanel(customInputPanel);
         updateWheel();
     });
 
-    categorySelect.addEventListener('change', function () {
-        console.log('Category changed to:', this.value);
-        if (mode === 'category') {
-            updateWheel();
-        }
+    btnCreateCategory.addEventListener('click', function () {
+        mode = 'createCategory';
+        btnCreateCategory.classList.add('active');
+        btnCategory.classList.remove('active');
+        btnCustom.classList.remove('active');
+        showPanel(userCategoryInputPanel);
+        updateWheel();
     });
+
+    loadCategoryBtn.addEventListener('click', function() {
+        // When load button is clicked, we assume the user wants to load the currently selected ready-made category
+        // So, clear any user category selection if it exists
+        if (userCategorySelect) {
+            userCategorySelect.value = '';
+            if (userCategoryActions) {
+                Array.from(userCategoryActions.children).forEach(button => button.style.display = 'none');
+            }
+        }
+        // Set mode to category explicitly in case it's not already
+        mode = 'category';
+        // Update the wheel based on the categorySelect value
+        updateWheel();
+    });
+
+    categorySelect.addEventListener('change', function() {
+        if (this.value) {
+            if (userCategorySelect) {
+                userCategorySelect.value = ''; // Clear user category selection
+                if (userCategoryActions) {
+                    Array.from(userCategoryActions.children).forEach(button => button.style.display = 'none');
+                }
+            }
+        }
+        updateWheel();
+    });
+
+    if (userCategorySelect) {
+        userCategorySelect.addEventListener('change', function() {
+            if (this.value) {
+                categorySelect.value = ''; // Clear ready-made category selection
+            }
+            updateWheel();
+        });
+    }
 
     spinBtn.addEventListener('click', function () {
         if (!currentOptions.length) return;
@@ -245,50 +318,35 @@ document.addEventListener('DOMContentLoaded', function () {
             spinCount.textContent = `Крутили: ${spinCountValue}`;
         });
     });
-    saveCustomOptionsBtn.addEventListener('click', function () {
-        if (mode !== 'custom') return;
-        const options = Array.from(optionList.children).map(item => item.querySelector('span').textContent);
-        if (!options.length) {
-            alert('Добавьте хотя бы один вариант!');
-            return;
-        }
-        fetch('/api/save_custom_options/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({options: options, result: ''})
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                alert('Варианты успешно сохранены!');
-            } else {
-                alert('Ошибка при сохранении: ' + (data.message || '')); 
+
+    if (saveCustomOptionsBtn) {
+        saveCustomOptionsBtn.addEventListener('click', function () {
+            if (mode !== 'custom') return;
+            const options = Array.from(optionList.children).map(item => item.querySelector('span').textContent);
+            if (!options.length) {
+                alert('Добавьте хотя бы один вариант!');
+                return;
             }
-        })
-        .catch(() => alert('Ошибка при сохранении!'));
-    });
-
-    // Добавляем обработчик для кнопки создания пользовательской категории
-    const btnUserCategory = document.createElement('button');
-    btnUserCategory.id = 'btnUserCategory';
-    btnUserCategory.textContent = 'Создать категорию';
-    btnUserCategory.className = 'btn btn-outline-primary';
-    document.querySelector('.switch-btns').appendChild(btnUserCategory);
-
-    btnUserCategory.addEventListener('click', function () {
-        mode = 'userCategory';
-        btnUserCategory.classList.add('active');
-        btnCategory.classList.remove('active');
-        btnCustom.classList.remove('active');
-        customInput.style.display = 'none';
-        categorySelect.style.display = 'none';
-        userCategoryInput.style.display = 'block';
-        updateWheel();
-    });
+            fetch('/api/save_custom_options/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({options: options, result: ''})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    alert('Варианты успешно сохранены!');
+                } else {
+                    alert('Ошибка при сохранении: ' + (data.message || '')); 
+                }
+            })
+            .catch(() => alert('Ошибка при сохранении!'));
+        });
+    }
 
     function addUserOption() {
         const option = userOptionInput.value.trim();
@@ -343,7 +401,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Категория успешно сохранена!');
                 categoryNameInput.value = '';
                 userOptionList.innerHTML = '';
-                // Перезагружаем страницу, чтобы обновить список категорий
                 window.location.reload();
             } else {
                 alert('Ошибка при сохранении: ' + (data.message || '')); 
@@ -355,43 +412,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.querySelectorAll('.delete-category').forEach(button => {
-        button.addEventListener('click', function (e) {
-            e.preventDefault();
-            const categoryId = this.getAttribute('data-category-id');
-            if (confirm('Вы уверены, что хотите удалить эту категорию?')) {
-                fetch('/api/delete_user_category/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({category_id: categoryId})
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        alert('Категория успешно удалена!');
-                        this.closest('option').remove();
-                    } else {
-                        alert('Ошибка при удалении: ' + (data.message || '')); 
-                    }
-                })
-                .catch(() => alert('Ошибка при удалении!'));
-            }
-        });
-    });
-
-    const userCategoryActions = document.getElementById('userCategoryActions');
     if (userCategoryActions) {
         userCategoryActions.addEventListener('click', function(e) {
             const editBtn = e.target.closest('.edit-category-btn');
             const deleteBtn = e.target.closest('.delete-category-btn');
+
             if (editBtn) {
                 editingCategoryId = editBtn.getAttribute('data-category-id');
                 editCategoryNameInput.value = editBtn.getAttribute('data-category-name');
-                // Заполняем варианты
                 editUserOptionList.innerHTML = '';
                 const options = editBtn.getAttribute('data-category-options').split('|').filter(Boolean);
                 options.forEach(opt => {
@@ -405,6 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 editCategoryModal.style.display = 'flex';
             }
+
             if (deleteBtn) {
                 e.preventDefault();
                 const categoryId = deleteBtn.getAttribute('data-category-id');
@@ -432,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
     document.body.addEventListener('click', function(e) {
         if (e.target && e.target.id === 'saveEditCategoryBtn') {
             const name = editCategoryNameInput.value.trim();
@@ -466,8 +496,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Initial setup to show the correct panel based on default mode
+    showPanel(categorySelectPanel);
+    // Automatically select the first category if available and update the wheel
+    function initializeWheel() {
+        if (mode === 'category') {
+            // First, try to select the first ready-made category that has options
+            const firstReadyMadeOption = categorySelect.querySelector('option:not([value=""])');
+            if (firstReadyMadeOption) {
+                categorySelect.value = firstReadyMadeOption.value;
+                if (userCategorySelect) userCategorySelect.value = ''; // Ensure user category is cleared
+            } else if (userCategorySelect) {
+                // If no ready-made categories, try to select the first user-made category
+                const firstUserMadeOption = userCategorySelect.querySelector('option:not([value=""])');
+                if (firstUserMadeOption) {
+                    userCategorySelect.value = firstUserMadeOption.value;
+                    categorySelect.value = ''; // Ensure ready-made category is cleared
+                }
+            }
+            // After initial selection, update the wheel
+            updateWheel();
+        } else {
+            updateWheel(); // For custom mode, ensure initial draw is done
+        }
+    }
 
-
-    // Первичная отрисовка
-    updateWheel();
+    initializeWheel();
 });
